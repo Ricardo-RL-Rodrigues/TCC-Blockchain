@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Login</title>
+	<link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+	<header>
+		<a class="logo" href="/"><img src="assets/logo2.png" alt="logo"></a>
+		<nav>
+			<ul class="nav__links">
+				<li><a href="cadastro.html">Cadastrar</a></li>
+			</ul>
+		</nav>
+	</header>
+    <h1>Login</h1>
+	<section class="area-login">
+        <div id="login" class="login" style="width: 350px; height: 320px;">
+            <div>
+                <img src="assets/logo.png" alt="" style="border-radius: 40px; margin-bottom: 20px">
+            </div>
+        <form id="login-form">
+            <input type="text" id="email" placeholder="Digite seu email:" autofocus>
+            <input type="password" id="senha"placeholder="Digite sua senha:">
+            <input value="Logar" type="submit" id="botao">
+        </form>
+        <p>Se ainda não tiver uma conta, <a href="cadastro.html">crie uma.</a></p>
+        </div>
+    </section>
+	<script>
+		/*Recebe o formulário na variável form e estabelece um listener para caso hajam Submits no formulário*/
+		const form = document.getElementById('login-form')
+		form.addEventListener('submit', logarUsuario)
+
+		/*Função disparada caso o formulário seja submetido*/
+		async function logarUsuario(event){
+			//Evita que a página se recarregue
+			event.preventDefault()
+
+			/*Recebe os valores de usuário e senha inseridos no formulário e os atribui à duas variáveis de mesmo nome*/
+			const email = document.getElementById('email').value
+			const senha = document.getElementById('senha').value
+
+			/*Realiza a requisição para a rota api/login, definindo seu método, cabeçalho e seu corpo(o mais importante) sendo ele um json, contendo as variáveis usuario e senha para serem tratados no arquivo principal*/
+			const result = await fetch('api/login', {
+				method: 'POST',
+				headers: {
+					'Content-Type' : 'application/json'
+				},
+				body: JSON.stringify({
+					email,
+					senha
+				})
+			}).then((res) => res.json())
+			
+			/*Caso nada de errado tenha ocorrido, o status da resposta gerada no módulo app pela função result será "ok", assim, será gerado , caso contrário, houve um erro e o login não será realizado.*/
+			if(result.status === "ok"){
+                console.log('Conseguiu o token: ', result.dados)
+				/*Armazena no localStorage do navegador o token*/
+				localStorage.setItem('token', result.dados)
+				alert('Login realizado com sucesso!')
+				window.location.href = '/'
+			}else{
+				alert(result.erro)
+			}
+		}
+	</script>
+</body>
+</html>

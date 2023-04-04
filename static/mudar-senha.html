@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Mudar Senha</title>
+	<link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+	<header>
+		<a class="logo" href="/"><img src="assets/logo2.png" alt="logo"></a>
+		<nav>
+			<ul class="nav__links">
+				<li><a href="index.html">Gerar Certificados</a></li>
+				<li><a href="visualizar.html">Visualizar Contratos</a></li>
+				<li id="sair"><a href="login.html">Sair</a></li>
+			</ul>
+		</nav>
+	</header>
+	<h1>Mudar Senha</h1>
+	<section class="area-login">
+        <div id="login" class="login" style="width: 250px; height: 260px;">
+            <div>
+                <img src="assets/logo.png" alt="" style="border-radius: 40px;">
+            </div>
+		<form id="mudar-form">
+			<input type="password" id="senha" placeholder="Digite sua nova senha:">
+			<input value="Mudar" type="submit" id="botao">
+			<p id="status" style="text-align: center; margin-top: 10px;"></p>
+		</form>
+        </div>
+    </section>
+	<script>
+		/*Recebe o formulário na variável form e estabelece um listener para caso hajam Submits no formulário*/
+		const form = document.getElementById('mudar-form')
+		form.addEventListener('submit', mudarSenha)
+
+		if(!localStorage.getItem('token')){
+			alert('Você não está logado!\nRealize o login para alterar sua senha.')
+			window.location.href = '/login.html'
+		}
+		document.getElementById('sair').addEventListener('click', ()=>{
+			if(confirm('Você deseja sair de sua conta?')){
+                localStorage.token = ''
+            }
+		})
+		
+		/*Função disparada caso o formulário seja submetido*/
+		async function mudarSenha(event){
+			//Evita que a página se recarregue
+			event.preventDefault()
+
+			/*Recebe os valores da senha do usuário*/
+			const senha = document.getElementById('senha').value
+
+			/*Realiza uma requisição para a rota /mudar-senha com o seu body sendo a nova senha e o token préviamente armazenado no navegador*/
+			const result = await fetch('api/mudar-senha', {
+				method: 'POST',
+				headers: {
+					'Content-Type' : 'application/json'
+				},
+				body: JSON.stringify({
+					novaSenha: senha,
+					token: localStorage.getItem('token')
+				})
+			}).then((res) => res.json())
+			
+			/*Caso nada de errado tenha ocorrido, o status da resposta gerada no módulo app epla função result será "ok", caso contrário, houve um erro que será exibido ao usuário e o banco não cadastrará nada*/
+			if(result.status === "ok"){
+				alert('Senha alterada com sucesso!')
+				document.getElementById('status').innerText = 'Sucesso!'
+				document.getElementById('senha').value = ''
+				window.location.href = '/'
+			}else{
+				if(result.erro.message ==='jwt must be provided'){
+					alert('Você não está logado!\nRealize o login e tente novamente.')
+					document.getElementById('status').innerText = 'Realize o login!'
+				}else{
+					alert(result.erro)
+					document.getElementById('status').innerText = 'Erro!'
+				}
+			}
+		}
+	</script>
+</body>
+</html>

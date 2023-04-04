@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel='stylesheet' href='styles/style.css'>
+    <title>Contratos</title>
+</head>
+<body>
+    <header>
+        <a class="logo" href="/"><img src="assets/logo2.png" alt="logo"></a>
+        <nav>
+            <ul class="nav__links">
+                <li><a href="index.html">Gerar Certificados</a></li>
+                <li><a href="mudar-senha.html">Mudar Senha</a></li>
+                <li id="sair"><a href="login.html">Sair</a></li>
+            </ul>
+        </nav>
+    </header>
+    <h1 style="margin-bottom: 30px;">Visualizar Contratos</h1>
+    <section id="exibir">
+    </section>
+    <script>
+        if(!localStorage.getItem('token')){
+            alert('Você não está logado!\nRealize o login para visualizar os contratos já feitos.')
+            window.location.href = '/login.html';
+        }
+        document.getElementById('sair').addEventListener('click', ()=>{
+			if(confirm('Você deseja sair de sua conta?')){
+                localStorage.token = ''
+            }
+		})
+
+        const Exibir = async()=>{
+            const result = await fetch('api/visualizar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type' : 'application/json'
+                },
+                body: JSON.stringify({
+                    token: localStorage.getItem('token')
+                })
+            }).then((res) => res.json())
+            if(result.status === "ok"){
+                const contratos = result.consulta
+                let conteudo = ''
+                for(let cont = 0; cont <= contratos.length-1; cont++){
+                    let link = "https://goerli.etherscan.io/address/"+contratos[cont].hash
+                    conteudo += `<section class="area-login" id="exibicao">`
+                    conteudo += `<p>Nome: ${contratos[cont].nome}<br>`
+                    conteudo += `Data: ${contratos[cont].data}<br>`
+                    conteudo += `<a href='${link}'>Hash: ${contratos[cont].hash}</a></p><br>`
+                    conteudo += `</section>`
+                    conteudo += `<br>`
+                }
+                document.getElementById('exibir').innerHTML += conteudo
+            }else{
+                if(result.status === "vazio"){
+                    document.getElementById('exibir').innerHTML = '<p id="vazio">Você ainda não gerou nenhum certificado</p>'
+                }else{
+                    alert(result.erro)
+                }
+            }
+        }
+        Exibir()
+    </script>
+</body>
+</html>

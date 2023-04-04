@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Validador</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' href='styles/style.css'>
+</head>
+<body>
+    <header>
+        <a class="logo" href="/"><img src="assets/logo2.png" alt="logo"></a>
+        <nav>
+            <ul class="nav__links">
+                <li><a href="visualizar.html">Visualizar Contratos</a></li>
+                <li><a href="mudar-senha.html">Mudar Senha</a></li>
+                <li id="sair"><a href="login.html">Sair</a></li>
+            </ul>
+        </nav>
+    </header>
+    <h1>Gerar certificado</h1>
+    <section class="area-login">
+        <div id="login" class="login" style="width: 520px; height: 550px;">
+            <div>
+                <img src="assets/logo.png" alt="" style="border-radius: 40px; margin-bottom: 20px">
+            </div>
+            <span>
+                <img src="assets/cert1.png" style="width: 200px; margin: 10px" id="cert1">
+                <img src="assets/cert2.png" style="width: 200px; margin: 10px" id="cert2">
+            </span>
+            <input type="text" id="nome" placeholder="Digite o nome do dono do certificado:" style="width: 80%;">
+            <input type="text" id="universidade" placeholder="Digite o nome da universidade que emitirá:" style="width: 80%;">
+            <input type="text" id="tempo" placeholder="Digite quantas horas o curso durou:" style="width: 80%;">
+            <button id="gerar" type="submit" style="width: 50%; cursor: pointer;">Gerar</button>   
+            <p style="margin-top: 20px;" id="progresso"></p>    
+        </div>
+    </section>
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@0.0.4"></script>
+    <script src="scripts/FileSaver.js"></script>
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script>
+        if(!localStorage.getItem('token') || localStorage.getItem('token') === ''){
+            alert('Você não está logado!\nRealize o login para gerar certificados.')
+            window.location.href = '/login.html';
+        }
+        document.getElementById('sair').addEventListener('click', ()=>{
+			if(confirm('Você deseja sair de sua conta?')){
+                localStorage.token = ''
+            }
+		})
+
+        let opcao = '1'
+        let coordy = 270
+        let tamanho = 40
+        let nome = ''
+        document.getElementById('cert1').addEventListener('click', ()=>{
+            document.getElementById('cert1').style.borderRadius = "20px";
+            document.getElementById('cert2').style.borderRadius = "0px";
+            opcao = '1'
+        })
+        document.getElementById('cert2').addEventListener('click', ()=>{
+            document.getElementById('cert1').style.borderRadius = "0px";
+            document.getElementById('cert2').style.borderRadius = "20px";
+            opcao = '2'
+        })
+
+        const botaoEnviar = document.getElementById('gerar')
+        const nomeCertificado = document.getElementById('nome')
+        const nomeUniversidade = document.getElementById('universidade')
+        const tempoCurso = document.getElementById('tempo')
+        const progresso = document.getElementById('progresso')
+        const generatePDF = async(name, universidade, tempo)=>{
+            try{
+                
+                const {PDFDocument, rgb} = PDFLib
+
+                const exBytes = await fetch(`assets/cert${opcao}.pdf`).then((res)=> {return res.arrayBuffer()})
+            
+                const exFont =  await fetch("assets/Sanchez-Regular.ttf").then((res)=>{return res.arrayBuffer()})
+            
+                const pdfDoc = await PDFDocument.load(exBytes)
+            
+                pdfDoc.registerFontkit(fontkit)
+                const myFont = await pdfDoc.embedFont(exFont)
+            
+                const pages = pdfDoc.getPages()
+                const firstPg = pages[0]
+
+                let coordx = firstPg.getWidth()/2 - name.length*10
+
+                if(opcao == '1'){
+                    coordx = firstPg.getWidth()/2 - name.length*10
+                    coordy = 270
+                    tamanho = 40
+                }else{
+                    coordx = firstPg.getWidth()/2 - name.length*10
+                    coordy = 360
+                    tamanho = 40
+                }
+                firstPg.drawText(name,{
+                    x: coordx,
+                    y: coordy,
+                    size: tamanho,
+                    font: myFont,
+                    color: rgb(0,0,0)
+                })
+                pdfDoc.setTitle('Certificado')
+
+                const result = await fetch('/api/index', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        universidade,
+                        tempo,
+                        token: localStorage.getItem('token')
+                    })
+                }).then((res) => res.json())
+                if(result.status === "ok"){
+                    firstPg.drawText(result.endereco,{
+                        x: 270,
+                        y: coordy-160,
+                        size: 12,
+                        font: myFont,
+                        color: rgb(0,0,0)
+                    }) 
+                    const imagemQRCode = "https://goerli.etherscan.io/address/"+result.endereco
+                    var link = 'https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=' + imagemQRCode;
+                    const pngImageBytes = await fetch(link).then((res) => res.arrayBuffer())
+                    const pngImage = await pdfDoc.embedPng(pngImageBytes)
+                    const pngDims = pngImage.scale(0.25)
+                    firstPg.drawImage(pngImage, {
+                        x: 110,
+                        y: coordy-265,
+                        width: pngDims.width,
+                        height: pngDims.height,
+                    })
+                    const uri = await pdfDoc.saveAsBase64({dataUri: true})
+                    saveAs(uri, `Certificado de ${name}.pdf`, {autoBon : true})
+                    progresso.innerText = 'Certificado gerado!'
+                }else{
+                    console.log(result.erro)
+                }
+            }catch(err){
+                console.log(err)
+            }
+        }
+        botaoEnviar.addEventListener('click', ()=>{
+            progresso.innerText = 'Carregando...'
+            generatePDF(nomeCertificado.value, nomeUniversidade.value, tempoCurso.value)
+            nome = nomeCertificado.value
+            nomeCertificado.value = ''
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Cadastro</title>
+	<link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+	<header>
+		<a class="logo" href="/"><img src="assets/logo2.png" alt="logo"></a>
+		<nav>
+			<ul class="nav__links">
+				<li><a href="login.html">Login</a></li>
+			</ul>
+		</nav>
+	</header>
+	<h1>Cadastro</h1>
+	<section class="area-login">
+        <div id="login" class="login" style="width: 350px; height: 460px;">
+            <div>
+                <img src="assets/logo.png" alt="" style="border-radius:50px;">
+            </div>
+		<form id="reg-form">
+			<input type="text" id="usuario" placeholder="Digite seu nome de usuário:">
+			<input type="text" id="email" placeholder="Digite seu email:">
+			<input type="password" id="senha" placeholder="Digite sua senha:">
+			<input type="text" id="telefone" placeholder="Digite seu telefone:">
+			<input type="text" id="cpf" placeholder="Digite seu cpf:">
+			<input value="Cadastrar" type="submit" id="botao">
+		</form>
+        </div>
+    </section>
+	<script>
+		/*Recebe o formulário na variável form e estabelece um listener para caso hajam Submits no formulário*/
+		const form = document.getElementById('reg-form')
+		form.addEventListener('submit', registrarUsuario)
+
+		/*Função disparada caso o formulário seja submetido*/
+		async function registrarUsuario(event){
+			//Evita que a página se recarregue
+			event.preventDefault()
+
+			/*Recebe os valores de usuário e senha inseridos no formulário e os atribui à duas variáveis de mesmo nome*/
+			const usuario = document.getElementById('usuario').value
+			const email = document.getElementById('email').value
+			const senha = document.getElementById('senha').value
+			const telefone = document.getElementById('telefone').value
+			const cpf = document.getElementById('cpf').value
+
+			/*Realiza a requisição para a rota api/register, definindo seu método, cabeçalho e seu corpo(o mais importante) sendo ele um json, contendo as variáveis usuario e senha para serem tratados no arquivo principal*/
+			const result = await fetch('api/registrar', {
+				method: 'POST',
+				headers: {
+					'Content-Type' : 'application/json'
+				},
+				body: JSON.stringify({
+					usuario,
+					email,
+					senha,
+					telefone,
+					cpf
+				})
+			}).then((res) => res.json())
+			/*Caso nada de errado tenha ocorrido, o status da resposta gerada no módulo app epla função result será "ok", caso contrário, houve um erro que será exibido ao usuário e o banco não cadastrará nada*/
+			if(result.status === "ok"){
+				alert('Cadastro realizado!')
+				window.location.href = '/login.html'
+			}else{
+				alert(result.erro)
+			}
+		}
+	</script>
+</body>
+</html>
